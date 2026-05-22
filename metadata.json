@@ -1,0 +1,8 @@
+{
+  "name": "Nevara Mental Health",
+  "description": "A Digital Mental Health and Psychological Support Platform for Higher Education Students.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

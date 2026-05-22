@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--primary);
+  --color-background: var(--background);
+  --color-dark: var(--dark);
+  --color-accent: var(--accent);
+  
+  --color-white: var(--surface);
+  --color-gray-50: var(--surface-50);
+  --color-gray-100: var(--surface-100);
+  --color-gray-200: var(--surface-200);
+  --color-gray-300: var(--surface-300);
+
+  --color-blue-50: var(--blue-50);
+  --color-blue-100: var(--blue-100);
+  --color-blue-500: var(--blue-500);
+
+  --color-green-50: var(--green-50);
+  --color-green-100: var(--green-100);
+  --color-green-200: var(--green-200);
+  --color-green-500: var(--green-500);
+  --color-green-700: var(--green-700);
+
+  --color-indigo-50: var(--indigo-50);
+  --color-indigo-100: var(--indigo-100);
+  --color-indigo-400: var(--indigo-400);
+  --color-indigo-500: var(--indigo-500);
+  --color-indigo-600: var(--indigo-600);
+  --color-indigo-900: var(--indigo-900);
+
+  --color-purple-50: var(--purple-50);
+  --color-purple-100: var(--purple-100);
+  --color-purple-500: var(--purple-500);
+  --color-purple-700: var(--purple-700);
+
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+}
+
+:root {
+  --primary: #8fa78d;
+  --background: #f4f7f5;
+  --dark: #2c3e39;
+  --accent: #b3acd1;
+  
+  --surface: #ffffff;
+  --surface-50: #fbfdfc;
+  --surface-100: #edf2f0;
+  --surface-200: #e1e8e5;
+  --surface-300: #cbd5d0;
+
+  --blue-50: #eff6ff; --blue-100: #dbeafe; --blue-500: #3b82f6;
+  --green-50: #f0fdf4; --green-100: #dcfce7; --green-200: #bbf7d0; --green-500: #22c55e; --green-700: #15803d;
+  --indigo-50: #eef2ff; --indigo-100: #e0e7ff; --indigo-400: #818cf8; --indigo-500: #6366f1; --indigo-600: #4f46e5; --indigo-900: #312e81;
+  --purple-50: #faf5ff; --purple-100: #f3e8ff; --purple-500: #a855f7; --purple-700: #7e22ce;
+}
+
+.dark {
+  --primary: #9bb399;
+  --background: #0f1412;
+  --dark: #f0f5f2;
+  --accent: #b9b3cc;
+  
+  --surface: #161c1a;
+  --surface-50: #1b2320;
+  --surface-100: #242d2a;
+  --surface-200: #2c3834;
+  --surface-300: #3f504a;
+
+  --blue-50: #111a22; --blue-100: #172635; --blue-500: #60a5fa;
+  --green-50: #101c15; --green-100: #15291d; --green-200: #1d402b; --green-500: #4ade80; --green-700: #86efac;
+  --indigo-50: #131726; --indigo-100: #1a2039; --indigo-400: #6b7bd4; --indigo-500: #818cf8; --indigo-600: #a5b4fc; --indigo-900: #e0e7ff;
+  --purple-50: #1b1324; --purple-100: #2b1a3d; --purple-500: #c084fc; --purple-700: #e9d5ff;
+}
+
+body {
+  font-family: "DM Sans", sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-dark);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Playfair Display", serif;
+}

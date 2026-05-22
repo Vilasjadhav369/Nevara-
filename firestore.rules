@@ -1,0 +1,239 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Basic helpers
+    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function isOwner(userId) { return request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.size() >= 5 && data.size() <= 11
+          && data.email is string && data.email.size() <= 200
+          && data.name is string && data.name.size() <= 100
+          && data.role is string && data.role in ['student', 'counselor']
+          && data.createdAt is number
+          && data.updatedAt is number
+          && (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500))
+          && (!('onboardingCompleted' in data) || data.onboardingCompleted is bool)
+          && (!('themePreference' in data) || (data.themePreference is string && data.themePreference.size() <= 50))
+          && (!('goals' in data) || (data.goals is list && data.goals.size() <= 10))
+          && (!('dndStart' in data) || (data.dndStart is string && data.dndStart.size() <= 5))
+          && (!('dndEnd' in data) || (data.dndEnd is string && data.dndEnd.size() <= 5));
+      }
+      
+      // Since it's public profile data (not splitting yet to keep it simple, but we only have name/email/avatar)
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn(); // Used for selecting counselors
+
+      allow create: if isSignedIn() 
+        && isOwner(userId)
+        && isValidUser(incoming())
+        && incoming().createdAt == request.time.toMillis()
+        && incoming().updatedAt == request.time.toMillis();
+        
+      allow update: if isSignedIn() 
+        && isOwner(userId)
+        && isValidUser(incoming())
+        && incoming().email == existing().email
+        && incoming().role == existing().role
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time.toMillis()
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatarUrl', 'updatedAt', 'onboardingCompleted', 'themePreference', 'goals', 'dndStart', 'dndEnd']);
+    }
+
+    match /moods/{moodId} {
+      function isValidMood(data) {
+        return data.size() >= 4 && data.size() <= 5
+          && data.userId is string && data.userId == request.auth.uid
+          && data.emoji is string && data.emoji.size() <= 10
+          && data.score is number && data.score >= 1 && data.score <= 5
+          && data.createdAt is number
+          && (!('note' in data) || (data.note is string && data.note.size() <= 2000));
+      }
+
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if isSignedIn() 
+        && isValidId(moodId)
+        && isValidMood(incoming())
+        && incoming().createdAt == request.time.toMillis();
+        
+      // Moods are append-only usually, but maybe they want to edit notes. 
+      allow update: if isSignedIn() 
+        && existing().userId == request.auth.uid
+        && isValidMood(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['emoji', 'score', 'note']);
+        
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    match /bookings/{bookingId} {
+        function isValidBooking(data) {
+          return data.size() >= 6 && data.size() <= 8
+            && data.userId is string 
+            && data.counselorId is string 
+            && data.scheduledAt is number
+            && data.status is string && data.status in ['pending', 'confirmed', 'completed', 'cancelled']
+            && data.createdAt is number
+            && data.updatedAt is number
+            && (!('rating' in data) || (data.rating is number && data.rating >= 1 && data.rating <= 5))
+            && (!('feedback' in data) || (data.feedback is string && data.feedback.size() <= 1000));
+        }
+
+        // Counselor or student can read
+        allow get: if isSignedIn() && (existing().userId == request.auth.uid || existing().counselorId == request.auth.uid);
+        allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.counselorId == request.auth.uid);
+        
+        allow create: if isSignedIn() 
+          && isValidId(bookingId)
+          && isValidBooking(incoming())
+          && incoming().userId == request.auth.uid
+          && incoming().createdAt == request.time.toMillis()
+          && incoming().updatedAt == request.time.toMillis();
+          
+        allow update: if isSignedIn() 
+          && (existing().userId == request.auth.uid || existing().counselorId == request.auth.uid)
+          && isValidBooking(incoming())
+          && incoming().userId == existing().userId
+          && incoming().counselorId == existing().counselorId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time.toMillis()
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'rating', 'feedback']);
+    }
+
+    match /posts/{postId} {
+      function isValidPost(data) {
+        return data.size() >= 6 && data.size() <= 6
+          && data.userId is string 
+          && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+          && data.content is string && data.content.size() > 0 && data.content.size() <= 5000
+          && data.upvotes is list && data.upvotes.size() <= 1000
+          && data.createdAt is number
+          && data.updatedAt is number;
+      }
+      
+      allow get: if isSignedIn() && isValidId(postId);
+      allow list: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && isValidId(postId)
+        && isValidPost(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().upvotes.size() == 0
+        && incoming().createdAt == request.time.toMillis()
+        && incoming().updatedAt == request.time.toMillis();
+        
+      allow update: if isSignedIn() 
+        && isValidId(postId)
+        && isValidPost(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        // Either they own it and update title/content, OR they update upvotes
+        && (
+          (existing().userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'updatedAt']) && incoming().updatedAt == request.time.toMillis()) ||
+          (incoming().diff(existing()).affectedKeys().hasOnly(['upvotes']))
+        );
+        
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      
+      match /replies/{replyId} {
+        function isValidReply(data) {
+          return data.size() >= 5 && data.size() <= 5
+            && data.postId is string && data.postId == postId
+            && data.userId is string 
+            && data.content is string && data.content.size() > 0 && data.content.size() <= 2000
+            && data.createdAt is number
+            && data.updatedAt is number;
+        }
+
+        allow get: if isSignedIn() && isValidId(postId) && isValidId(replyId);
+        allow list: if isSignedIn();
+        
+        allow create: if isSignedIn() 
+          && isValidId(postId)
+          && isValidId(replyId)
+          && isValidReply(incoming())
+          && incoming().userId == request.auth.uid
+          && incoming().createdAt == request.time.toMillis()
+          && incoming().updatedAt == request.time.toMillis()
+          && exists(/databases/$(database)/documents/posts/$(postId));
+          
+        allow update: if isSignedIn() 
+          && existing().userId == request.auth.uid
+          && isValidReply(incoming())
+          && incoming().postId == existing().postId
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time.toMillis()
+          && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'updatedAt']);
+          
+        allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      }
+    }
+
+    match /habitLogs/{habitLogId} {
+      function isValidHabitLog(data) {
+        return data.size() >= 6 && data.size() <= 7
+          && data.userId is string && data.userId == request.auth.uid
+          && data.dateStr is string && data.dateStr.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && data.waterGlasses is number && data.waterGlasses >= 0 && data.waterGlasses <= 50
+          && data.exerciseMinutes is number && data.exerciseMinutes >= 0 && data.exerciseMinutes <= 1440
+          && data.sleepHours is number && data.sleepHours >= 0 && data.sleepHours <= 24
+          && (!('goalsCompleted' in data) || (data.goalsCompleted is list && data.goalsCompleted.size() <= 20))
+          && data.updatedAt is number;
+      }
+
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if isSignedIn() 
+        && isValidId(habitLogId)
+        && isValidHabitLog(incoming())
+        && incoming().updatedAt == request.time.toMillis();
+        
+      allow update: if isSignedIn() 
+        && existing().userId == request.auth.uid
+        && isValidHabitLog(incoming())
+        && incoming().userId == existing().userId
+        && incoming().dateStr == existing().dateStr
+        && incoming().updatedAt == request.time.toMillis()
+        && incoming().diff(existing()).affectedKeys().hasOnly(['waterGlasses', 'exerciseMinutes', 'sleepHours', 'goalsCompleted', 'updatedAt']);
+    }
+
+    match /chats/{roomId}/messages/{messageId} {
+      function isValidMessage(data) {
+        return data.size() >= 4 && data.size() <= 4
+          && data.roomId is string && data.roomId == roomId
+          && data.senderId is string && data.senderId == request.auth.uid
+          && data.content is string && data.content.size() > 0 && data.content.size() <= 2000
+          && data.createdAt is number;
+      }
+      
+      // Let's assume roomId is constructed as "uid1_uid2"
+      function isParticipant() {
+        return roomId.matches('.*' + request.auth.uid + '.*');
+      }
+
+      allow get: if isSignedIn() && isParticipant() && isValidId(roomId) && isValidId(messageId);
+      allow list: if isSignedIn() && isParticipant() && isValidId(roomId);
+      
+      allow create: if isSignedIn()
+        && isValidId(roomId) && isValidId(messageId)
+        && isParticipant()
+        && isValidMessage(incoming())
+        && incoming().createdAt == request.time.toMillis();
+        
+      allow delete: if isSignedIn() && existing().senderId == request.auth.uid;
+    }
+  }
+}

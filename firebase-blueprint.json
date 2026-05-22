@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": ["string", "null"] },
+        "role": { "type": "string", "enum": ["student", "counselor"] },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "onboardingCompleted": { "type": "boolean" },
+        "themePreference": { "type": ["string", "null"] },
+        "goals": { "type": ["array", "null"], "items": { "type": "string" } },
+        "dndStart": { "type": ["string", "null"] },
+        "dndEnd": { "type": ["string", "null"] }
+      },
+      "required": ["email", "name", "role", "createdAt", "updatedAt"]
+    },
+    "Mood": {
+      "title": "Mood",
+      "description": "Daily mood journal entry.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "emoji": { "type": "string" },
+        "score": { "type": "number" },
+        "note": { "type": ["string", "null"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "emoji", "score", "createdAt"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Session booking details.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "counselorId": { "type": "string" },
+        "scheduledAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"] },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "rating": { "type": ["number", "null"] },
+        "feedback": { "type": ["string", "null"] }
+      },
+      "required": ["userId", "counselorId", "scheduledAt", "status", "createdAt", "updatedAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Anonymous community forum post.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "upvotes": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "title", "content", "upvotes", "createdAt", "updatedAt"]
+    },
+    "Reply": {
+      "title": "Reply",
+      "description": "Reply to a community forum post.",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string" },
+        "userId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["postId", "userId", "content", "createdAt", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Live chat message",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["roomId", "senderId", "content", "createdAt"]
+    },
+    "HabitLog": {
+      "title": "HabitLog",
+      "description": "Daily habit tracking.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dateStr": { "type": "string", "description": "YYYY-MM-DD" },
+        "waterGlasses": { "type": "number" },
+        "exerciseMinutes": { "type": "number" },
+        "sleepHours": { "type": "number" },
+        "goalsCompleted": { "type": ["array", "null"], "items": { "type": "string" } },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "dateStr", "waterGlasses", "exerciseMinutes", "sleepHours", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Public user profiles"
+    },
+    "/habitLogs/{habitLogId}": {
+      "schema": { "$ref": "#/entities/HabitLog" },
+      "description": "User habit tracking logs"
+    },
+    "/moods/{moodId}": {
+      "schema": { "$ref": "#/entities/Mood" },
+      "description": "Mood journals"
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Therapy bookings"
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Forum posts"
+    },
+    "/posts/{postId}/replies/{replyId}": {
+      "schema": { "$ref": "#/entities/Reply" },
+      "description": "Replies to forum posts"
+    },
+    "/chats/{roomId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Live chat messages"
+    }
+  }
+}
